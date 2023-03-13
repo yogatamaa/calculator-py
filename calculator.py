@@ -1,140 +1,178 @@
-from tkinter import*
-import tkinter.font as font
-import math
+import tkinter as tk
 
-root = Tk()
-root.title("belajar frame")
-root["bg"] = "#d1d1d1"
-root.geometry("310x400")
+LARGE_FONT_STYLE = ("Arial", 20, "bold")
+SMALL_FONT_STYLE = ("Arial", 16)
+DIGITS_FONT_STYLE = ("Arial", 24, "bold")
+DEFAULT_FONT_STYLE = ("Arial", 20)
 
-myfont  = font.Font(size=15)
-
-e = Entry(root,width=15,borderwidth=0)
-e["font"]= myfont
-e["bg"] = "#d1d1d1"
-e.grid(row = 0,columnspan=4,pady=20,padx=20)
+OFF_WHITE = "#ffffff"
+WHITE = "#54ffac"
+LIGHT_BLUE = "#54ffac"
+LIGHT_GRAY = "#444f4a"
+LABEL_COLOR = "#000000"
 
 
-def cetak(nilai):
-    current = e.get()
-    e.delete(0,END)
-    e.insert(0, str(current)+str(nilai))
-def tambah():
-    nomor_awal = e.get()
-    global n_awal
-    global mtk
-    mtk = "penjumlahan"
-    n_awal = int(nomor_awal)
-    e.delete(0,END)
-def kurang():
-    nomor_awal = e.get()
-    global n_awal
-    global mtk
-    mtk = "pengurangan"
-    n_awal = int(nomor_awal)
-    e.delete(0,END)
-def bagi():
-    nomor_awal = e.get()
-    global n_awal
-    global mtk
-    mtk = "pembagian"
-    n_awal = int(nomor_awal)
-    e.delete(0,END)
-def kali():
-    nomor_awal = e.get()
-    global n_awal
-    global mtk
-    mtk = "perkalian"
-    n_awal = int(nomor_awal)
-    e.delete(0,END)
+class Calculator:
+    def __init__(self):
+        self.window = tk.Tk()
+        self.window.geometry("375x667")
+        self.window.resizable(0, 0)
+        self.window.title("Brantor")
 
-def sisabagi():
-    nomor_awal = e.get()
-    global n_awal
-    global mtk
-    mtk = "sisabagi"
-    n_awal = int(nomor_awal)
-    e.delete(0,END)
+        self.total_expression = ""
+        self.current_expression = ""
+        self.display_frame = self.create_display_frame()
 
-def pangkat():
-    nomor_awal = e.get()
-    global n_awal
-    n_awal = int(nomor_awal)
-    e.delete(0,END)
-    e.insert(0,n_awal **2)
+        self.total_label, self.label = self.create_display_labels()
 
-def akar():
-    nomor_awal = e.get()
-    global n_awal
-    n_awal = int(nomor_awal)
-    e.delete(0,END)
-    e.insert(0,math.sqrt(n_awal))
+        self.digits = {
+            7: (1, 1), 8: (1, 2), 9: (1, 3),
+            4: (2, 1), 5: (2, 2), 6: (2, 3),
+            1: (3, 1), 2: (3, 2), 3: (3, 3),
+            0: (4, 2), '.': (4, 1)
+        }
+        self.operations = {"/": "\u00F7", "*": "\u00D7", "-": "-", "+": "+"}
+        self.buttons_frame = self.create_buttons_frame()
 
+        self.buttons_frame.rowconfigure(0, weight=1)
+        for x in range(1, 5):
+            self.buttons_frame.rowconfigure(x, weight=1)
+            self.buttons_frame.columnconfigure(x, weight=1)
+        self.create_digit_buttons()
+        self.create_operator_buttons()
+        self.create_special_buttons()
+        self.bind_keys()
 
-def hapus():
-    e.delete(0,END)
-def samadengan():
-    nomor_akhir = e.get()
-    e.delete(0,END)
-    if mtk == "penjumlahan":
-        e.insert(0,n_awal + int(nomor_akhir))
-    elif mtk == "pengurangan":
-        e.insert(0,n_awal - int(nomor_akhir))
-    elif mtk == "pembagian":
+    def bind_keys(self):
+        self.window.bind("<Return>", lambda event: self.evaluate())
+        for key in self.digits:
+            self.window.bind(str(key), lambda event, digit=key: self.add_to_expression(digit))
+
+        for key in self.operations:
+            self.window.bind(key, lambda event, operator=key: self.append_operator(operator))
+
+    def create_special_buttons(self):
+        self.create_clear_button()
+        self.create_equals_button()
+        self.create_square_button()
+        self.create_sqrt_button()
+        self.create_backspace_button()
+
+    def create_display_labels(self):
+        total_label = tk.Label(self.display_frame, text=self.total_expression, anchor=tk.E, bg=LIGHT_GRAY,
+                               fg=LABEL_COLOR, padx=24, font=SMALL_FONT_STYLE)
+        total_label.pack(expand=True, fill='both')
+
+        label = tk.Label(self.display_frame, text=self.current_expression, anchor=tk.E, bg=LIGHT_GRAY,
+                         fg=LABEL_COLOR, padx=24, font=LARGE_FONT_STYLE)
+        label.pack(expand=True, fill='both')
+
+        return total_label, label
+
+    def create_display_frame(self):
+        frame = tk.Frame(self.window, height=221, bg=LIGHT_GRAY)
+        frame.pack(expand=True, fill="both")
+        return frame
+
+    def add_to_expression(self, value):
+        self.current_expression += str(value) #di cari
+        self.update_label()
+
+    def backspace(self):
+        if self.current_expression != "":
+            self.current_expression = self.current_expression[:-1]
+            self.update_label()
+
+    def create_backspace_button(self):
+        button = tk.Button(self.buttons_frame, text="⌫", bg=OFF_WHITE, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE, borderwidth=0, command=self.backspace)
+        button.grid(row=0, column=4, sticky=tk.NSEW)
+
+    def create_digit_buttons(self):
+        for digit, grid_value in self.digits.items():
+            button = tk.Button(self.buttons_frame, text=str(digit), bg=WHITE, fg=LABEL_COLOR, font=DIGITS_FONT_STYLE,
+                               borderwidth=0, command=lambda x=digit: self.add_to_expression(x))
+            button.grid(row=grid_value[0], column=grid_value[1], sticky=tk.NSEW)
+
+    def append_operator(self, operator):
+        self.current_expression += operator
+        self.total_expression += self.current_expression
+        self.current_expression = ""
+        self.update_total_label()
+        self.update_label()
+
+    def create_operator_buttons(self):
+        i = 0
+        for operator, symbol in self.operations.items():
+            button = tk.Button(self.buttons_frame, text=symbol, bg=OFF_WHITE, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                               borderwidth=0, command=lambda x=operator: self.append_operator(x))
+            button.grid(row=i, column=4, sticky=tk.NSEW)
+            i += 1
+
+    def clear(self):
+        self.current_expression = ""
+        self.total_expression = ""
+        self.update_label()
+        self.update_total_label()
+
+    def create_clear_button(self):
+        button = tk.Button(self.buttons_frame, text="C", bg=OFF_WHITE, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                           borderwidth=0, command=self.clear)
+        button.grid(row=0, column=1, sticky=tk.NSEW)
+
+    def square(self):
+        self.current_expression = str(eval(f"{self.current_expression}**2"))
+        self.update_label()
+
+    def create_square_button(self):
+        button = tk.Button(self.buttons_frame, text="x\u00b2", bg=OFF_WHITE, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                           borderwidth=0, command=self.square)
+        button.grid(row=0, column=2, sticky=tk.NSEW)
+
+    def sqrt(self):
+        self.current_expression = str(eval(f"{self.current_expression}**0.5"))
+        self.update_label()
+
+    def create_sqrt_button(self):
+        button = tk.Button(self.buttons_frame, text="\u221ax", bg=OFF_WHITE, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                           borderwidth=0, command=self.sqrt)
+        button.grid(row=0, column=3, sticky=tk.NSEW)
+
+    def evaluate(self):
+        self.total_expression += self.current_expression
+        self.update_total_label()
         try:
-            hitung = n_awal / int(nomor_akhir)
-            e.insert(0,hitung)
-        except ZeroDivisionError:
-            e.insert(0,"maaf gabisa ")
-            
-    elif mtk == "perkalian":
-        e.insert(0,n_awal * int(nomor_akhir))
-    elif mtk == "sisabagi":
-        e.insert(0,n_awal % int(nomor_akhir))
+            self.current_expression = str(eval(self.total_expression));
+
+            self.total_expression = ""
+        except Exception as e:
+            self.current_expression = "error bro karna bilangan 0"
+        finally:
+            self.update_label()
+
     
 
-btn  = Button(root,text="1",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(1))
-btn2  = Button(root,text="2",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(2))
-btn3  = Button(root,text="3",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(3))
-btn4  = Button(root,text="4",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(4))
-btn5 = Button(root,text="5",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(5))
-btn6  = Button(root,text="6",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(6))
-btn7  = Button(root,text="7",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(7))
-btn8  = Button(root,text="8",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(8))
-btn9  = Button(root,text="9",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(9))
-btn0  = Button(root,text="0",padx = 30,bg="#A097C7",fg="white", pady = 20,command=lambda:cetak(0))
-tam = Button(root,text="+",padx = 30,bg="#F0E7FF",fg="black", pady = 20,command=tambah)
-kur = Button(root,text="-",padx = 30,bg="#F0E7FF",fg="black", pady = 20,command=kurang)
-bag  = Button(root,text="/",padx = 30,bg="#F0E7FF",fg="black", pady = 20,command=bagi)
-kal = Button(root,text="x",padx = 30,bg="#F0E7FF",fg="black", pady = 20,command=kali)
-pang = Button(root,text="x2",padx = 30,bg="#F0E7FF",fg="black", pady = 20,command=pangkat)
-ak2 = Button(root,text="sq2",padx = 25,bg="#F0E7FF",fg="black", pady = 20,command=akar)
-sisbag = Button(root,text="%",padx = 30,bg="#F0E7FF",fg="black", pady = 20,command=sisabagi)
-hap = Button(root,text="C",padx = 30,bg="#F0E7FF",fg="black", pady = 20,command=hapus)
-equal = Button(root,text="=",padx = 60,bg="skyblue", pady = 20,command=samadengan)
+    def create_equals_button(self):
+        button = tk.Button(self.buttons_frame, text="=", bg=LIGHT_BLUE, fg=LABEL_COLOR, font=DEFAULT_FONT_STYLE,
+                           borderwidth=1, command=self.evaluate)
+        button.grid(row=4, column=3, columnspan=2, sticky=tk.NSEW)
 
+    def create_buttons_frame(self):
+        frame = tk.Frame(self.window)
+        frame.pack(expand=True, fill="both")
+        return frame
+    
+    def update_total_label(self):
+        expression = self.total_expression
+        for operator, symbol in self.operations.items():
+            expression = expression.replace(operator, f' {symbol} ')
+        self.total_label.config(text=expression)
 
-btn.grid(row=3,column=0,pady=2)
-btn2.grid(row=3,column=1,pady=2)
-btn3.grid(row=3,column=2,pady=2)
-btn4.grid(row=2,column=0,pady=2)
-btn5.grid(row=2,column=1,pady=2)
-btn6.grid(row=2,column=2,pady=2)
-btn7.grid(row=1,column=0,pady=2)
-btn8.grid(row=1,column=1,pady=2)
-btn9.grid(row=1,column=2,pady=2)
-btn0.grid(row=4,column=1,pady=2)
+    def update_label(self):
+        self.label.config(text=self.current_expression[:11])
 
-tam.grid(row=1,column=3,pady=2)
-kur.grid(row=2,column=3,pady=2)
-bag.grid(row=3,column=3,pady=2)
-kal.grid(row=4,column=3,pady=2)
-hap.grid(row=4,column=0,pady=2)
-equal.grid(row=5,column=2,columnspan=2)
-pang.grid(row =5,column=0,pady=2)
-ak2.grid(row =5,column=1,pady=2)
-sisbag.grid(row =4,column=2,pady=2)
+    def run(self):
+        self.window.mainloop()
 
-
-
-root.mainloop()
+if __name__ == "__main__":
+    calc = Calculator()
+    calc.run()
